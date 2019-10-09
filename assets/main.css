@@ -1,0 +1,73 @@
+
+/* This file is for consistent styling across main content pages */
+.image-background {
+	background-size: cover;
+	background-position: center bottom;
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	min-height: 90vh;
+	margin-bottom: 60px;
+}
+.code {
+	background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url(https://people.rit.edu/ztj3686/assets/code.jpeg);
+}
+
+h1, h2 {
+	margin-left: 15px;
+}
+
+.full-width .center-text {
+	/* Centered in the image */
+	margin: 0;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	-webkit-transform: translate(-50%, -50%);
+}
+
+.large-text {
+	text-align: center;
+	font-size: 4em;
+	color: white;
+	font-weight: bold;
+	text-shadow: 3px 3px 10px black;
+}
+
+.description-text {
+	margin-left: 20%;
+	margin-right: 20%;
+	margin-bottom: 1em;
+	font-size: 1.4em;
+	text-shadow: 2px 2px 10px black;
+}
+
+.image-background .description-text {
+		color: #ddd;
+}
+
+.sp_10 {
+	padding-top: 10%;
+}
+.sp_30 {
+	padding-top: 30%;
+}
+
+section {
+	margin-top: 2em;
+	margin-left: 1em;
+	margin-right: 1em;
+}
+
+iframe {
+	border: none;
+	width: 100%;
+}
+
+p, ul {
+	margin-left: 2em;
+}
+
+button {
+	margin: 5px;
+}
