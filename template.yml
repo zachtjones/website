@@ -59,9 +59,12 @@ Resources:
              - HEAD
           ForwardedValues:
             Cookies:
-              Forward: all
+              Forward: none
             QueryString: true
           ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: 60 # one minute
+          MaxTTL: 86400 # 1 day
+          MinTTL: 60
         ViewerCertificate:
           AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1
           SslSupportMethod: sni-only
