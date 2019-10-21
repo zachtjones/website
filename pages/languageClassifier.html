@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Zach Jones - Language Classifier</title>
+        <!-- favicon, when I make one -->
+    	<!-- <link rel='icon' href="assets/images/favicon.jpg" /> -->
+    	<link rel="stylesheet" href="main.css" />
+    	<link rel="stylesheet" href="nav.css" />
+    	<!-- Oswald font import -->
+    	<link href="https://fonts.googleapis.com/css?family=Oswald:300" rel="stylesheet">
+        <!-- Google charts API -->
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script>
+            google.charts.load('current', {'packages':['corechart']});
+        </script>
+    </head>
+    <body>
+        <section>
+            <h1>Language Classifier demo</h1>
+            <p>You can view the source code
+                <a href="https://github.com/zachtjones/Multi-Language-Classifier" target="_blank">here</a>.
+            </p>
+    		<p>
+                Enter a phrase in the box below (it will be more accurate with a longer phrase).
+            </p>
+            <p>
+                <textarea id="phrase" name="phrase" style="width: 50%; height: 100px; font-size: 16px"></textarea><br/>
+                <button type="button" onclick="checkLanguage()">Check the language</button>
+            </p>
+    	</section>
+
+        <section>
+            <p id='answer'></p>
+            <p id='mostLikely'></p>
+            <div style="max-width: 750px" id='chart'></div>
+        </section>
+
+        <script>
+            function checkLanguage() {
+                var text = document.getElementById("phrase").value;
+                if (text) {
+                    // clear the old outputs
+                    document.getElementById('mostLikely').innerHTML = "";
+                    document.getElementById('chart').innerHTML = "";
+
+                    // send the request
+                    var xmlhttp = new XMLHttpRequest();
+                    var url = "/api/classifier/classify";
+
+                    xmlhttp.onreadystatechange = function() {
+                        if (this.readyState == 4 && this.status == 200) {
+                            var response = JSON.parse(this.responseText);
+                            updatePage(response);
+                        }
+                    };
+
+                    xmlhttp.open("POST", url, true);
+                    xmlhttp.send(JSON.stringify({ phrase: text }));
+                } else {
+                    alert("Please enter a phrase in the text box.");
+                }
+            }
+
+            // language results is an object of Language -> likelihood (0...1)
+            function updatePage(languageResults) {
+                // clear the old text box
+                document.getElementById('answer').innerText = "Your phrase: " + document.getElementById('phrase').value;
+                document.getElementById('phrase').value = '';
+
+                var data = [['Language', 'Percentage']];
+                var highestProbability = 0;
+                var highestLanguage = '';
+
+                // determine the most likely and create the list of data
+                Object.keys(languageResults).forEach(function(language) {
+                    data.push([language, languageResults[language] * 100]);
+                    if (languageResults[language] > highestProbability) {
+                        highestLanguage = language;
+                        highestProbability = languageResults[language];
+                    }
+                });
+
+                // display the highest language
+                document.getElementById('mostLikely').appendChild(
+                    document.createTextNode("The most likely language (" + (highestProbability * 100).toFixed(2) + "%) is " + highestLanguage)
+                );
+
+                //pie chart
+                var dataFrame = google.visualization.arrayToDataTable(data);
+                var options = {
+                    title: 'Language Classification',
+                    backgroundColor: '#FCF0DF',
+                    height: 700
+                };
+                var chart = new google.visualization.PieChart(document.getElementById('chart'));
+                chart.draw(dataFrame, options);
+            }
+        </script>
+
+
+
+    	<!-- Add space at the end of the document. -->
+    	<div class="sp_10"></div>
+    	<footer>
+    		<p>Copyright &copy; Zach Jones, 2019</p>
+    	</footer>
+    </body>
+</html>

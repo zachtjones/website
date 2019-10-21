@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: "The website https://zach-jones.com"
+Parameters:
+  WebsiteCert:
+    Description: The website's certificate ARN for the domain assets.zach-jones.com
+    Type: String
+#   EnvironmentName:
+#     Description: Prod or Dev
+#     Type: String
+
+Resources:
+  # Allow public reads of the assets bucket
+  StaticAssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StaticAssetsBucket
+      PolicyDocument:
+        Id: zach-website-bucket-policy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowPublicReads
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Principal: "*" # anonymous access
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref StaticAssetsBucket
+                  - /*
+  # this is the assets bucket
+  StaticAssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: 'zach-assets'
+
+  # CloudFront distribution for the website
+  myDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+           - DomainName: !GetAtt StaticAssetsBucket.DomainName
+             Id: !Ref StaticAssetsBucket
+             S3OriginConfig: {}
+        Enabled: 'true'
+        DefaultRootObject: index.html
+        Aliases:
+          - assets.zach-jones.com
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref StaticAssetsBucket
+          AllowedMethods:
+             - GET
+             - HEAD
+          CachedMethods:
+             - GET
+             - HEAD
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: true
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: 60 # one minute
+          MaxTTL: 86400 # 1 day
+          MinTTL: 60
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1
+          SslSupportMethod: sni-only

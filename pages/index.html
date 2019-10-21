@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+	<meta charset="utf-8" />
+	<title>Zach Jones</title>
+	<!-- favicon, when I make one -->
+	<!-- <link rel='icon' href="assets/images/favicon.jpg" /> -->
+	<link rel="stylesheet" href="main.css" />
+	<link rel="stylesheet" href="nav.css" />
+	<!-- Oswald font import -->
+	<link href="https://fonts.googleapis.com/css?family=Oswald:300" rel="stylesheet">
+</head>
+<body>
+	<div class="sp_10"></div>
+	<div class="image-background code">
+		<div class="sp_30"></div>
+		<div class="large-text">Welcome to my website</div>
+		<div class="sp_10"></div>
+		<div class="description-text">This is a description of how the infrustructure for this site is set up.</div>
+		<div class="description-text">
+			<img src="https://people.rit.edu/ztj3686/assets/website-arch.png" style="width: 100%;" />
+		</div>
+		<div class="sp_10"></div>
+	</div>
+
+	<section>
+		<h2>My Resume</h2>
+		<p>Here's a view of the PDF version of my resume (html interactive coming soon)</p>
+		<iframe src="https://people.rit.edu/ztj3686/assets/resume.pdf" type='application/pdf' style='min-height: calc(100vh - 220px)'></iframe>
+	</section>
+
+	<section>
+		<h2>Amazon Web Services (AWS) Solutions Architect, Associate</h2>
+		<p>
+			<a href="https://www.certmetrics.com/amazon/public/badge.aspx?i=1&t=c&d=2019-10-08&ci=AWS01091038" target="_blank">View my certification</a>
+		</p>
+	</section>
+
+	<section>
+		<h2>Links to my projects</h2>
+		<p>
+			<a href="https://github.com/Comic-Con-Museum/fan-forge-frontend" target="_blank">Comic-Con Museum Web Portal</a>
+			<ul>
+				<li>
+					This holds the code for the front-end repo, which I worked on as part of a hackathon.
+				</li>
+			</ul>
+		</p>
+		<p>
+			<a href="https://github.com/zachtjones/Java-Compiler" target="_blank">Java Compiler</a>
+			<ul>
+				<li>
+					This project is used to compile some Java programs to x64 asssembly.
+				</li>
+				<li>
+					Tests are automatically run on PR's by AWS Codebuild, statuses are reported to Github.
+				</li>
+				<li>
+					Support for all the language features used in
+					<a href="https://github.com/zachtjones/Java-Compiler/tree/master/src/main/resources/test-programs" target="_blank">
+					these programs. </a>
+				</li>
+				<li>
+					Coming soon: create API call to demo this project on this website, using AWS Serverless architectures.
+				</li>
+			</ul>
+		</p>
+		<p>
+			<a href="https://github.com/zachtjones/Multi-Language-Classifier" target="_blank">Language Classifier</a>
+			<ul>
+				<li>
+					Given a phrase, it predicts the language between 15 latin-based character set languages.
+				</li>
+				<li>
+					Uses machine learning techniques: decision trees and adaptive boosting to achieve 97% accuracy.
+				</li>
+				<li>
+					Learns its own attributes to help classify based on words containing, starting, ending, or letter frequency;
+					using genetic algorithms to evolve those attributes into ones that better split the group.
+				</li>
+				<li>
+					You can view a demo of this project, on <a href="languageClassifier.html">this page</a>.
+				</li>
+			</ul>
+		</p>
+		<p>
+			<a href="https://people.rit.edu/ztj3686/iste240/project2/index.php" target="_blank">Web II Project</a>
+			<ul>
+				<li>This one was a project for one of my classes, the topic was a travel destination.</li>
+				<li>*Note this uses server side php with a database, but there's no database on people.rit.edu,
+				so the forms won't work properly.</li>
+			</ul>
+		</p>
+	</section>
+
+
+
+	<!-- Add space at the end of the document. -->
+	<div class="sp_10"></div>
+	<footer>
+		<p>Copyright &copy; Zach Jones, 2019</p>
+	</footer>
+</body>
+</html>
