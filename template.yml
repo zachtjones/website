@@ -1,10 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: "The website https://zach-jones.com"
-#Parameters:
-#   EnvironmentName:
-#     Description: Prod or Dev
-#     Type: String
+Parameters:
+  LanguageClassifierLambda:
+    Description: "The ARN of the lambda to run the language classifier"
+    Type: String
+    Default: "arn:aws:lambda:us-east-1:579864915094:function:languageClassifierGetLanguage"
+  AssetsCert:
+    Description: "The ARN of the ACM's certificate for the assets.zach-jones.com domain"
+    Type: String
+    Default: "arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1"
+  ContentCert:
+    Description: "The ARN of the ACM's certificate for the zach-jones.com domain"
+    Type: String
+    Default: arn:aws:acm:us-east-1:579864915094:certificate/89191fa7-b0e6-4357-85e8-61e48f9502cf
 
 Resources:
   # Allow public reads of the assets bucket
@@ -93,7 +102,7 @@ Resources:
           MaxTTL: 86400 # 1 day
           MinTTL: 60
         ViewerCertificate:
-          AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1
+          AcmCertificateArn: !Ref AssetsCert
           SslSupportMethod: sni-only
 
   # CloudFront distribution for the website's content (HTML, JS)
@@ -126,5 +135,5 @@ Resources:
           MaxTTL: 60
           MinTTL: 60
         ViewerCertificate:
-          AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/89191fa7-b0e6-4357-85e8-61e48f9502cf
+          AcmCertificateArn: !Ref ContentCert
           SslSupportMethod: sni-only
