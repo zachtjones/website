@@ -1,17 +1,14 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: "The website https://zach-jones.com"
-Parameters:
-  WebsiteCert:
-    Description: The website's certificate ARN for the domain assets.zach-jones.com
-    Type: String
+#Parameters:
 #   EnvironmentName:
 #     Description: Prod or Dev
 #     Type: String
 
 Resources:
   # Allow public reads of the assets bucket
-  StaticAssetsBucketPolicy:
+  StaticAssetsRead:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref StaticAssetsBucket
@@ -27,16 +24,46 @@ Resources:
             Resource:
               - !Join
                 - ''
-                - - 'arn:aws:s3:::'
-                  - !Ref StaticAssetsBucket
+                - - !GetAtt StaticAssetsBucket.Arn
                   - /*
+
   # this is the assets bucket
   StaticAssetsBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: 'zach-assets'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+        # ErrorDocument: 'error.html' # once there is one
 
-  # CloudFront distribution for the website
+  ContentReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Id: zach-website-content-bucket-policy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowPublicReads
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Principal: "*" # anonymous access
+            Resource:
+              - !Join
+                - ''
+                - - !GetAtt ContentBucket.Arn
+                  - /*
+
+  # the S3 bucket for the home page
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: 'zach-website'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+
+  # CloudFront distribution for the website's assets (Images, CSS)
   myDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -67,4 +94,37 @@ Resources:
           MinTTL: 60
         ViewerCertificate:
           AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1
+          SslSupportMethod: sni-only
+
+  # CloudFront distribution for the website's content (HTML, JS)
+  contentDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+           - DomainName: !GetAtt ContentBucket.DomainName
+             Id: !Ref ContentBucket
+             S3OriginConfig: {}
+        Enabled: 'true'
+        DefaultRootObject: index.html
+        Aliases:
+          - zach-jones.com
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref ContentBucket
+          AllowedMethods:
+             - GET
+             - HEAD
+          CachedMethods:
+             - GET
+             - HEAD
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: true
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: 60 # one minute
+          MaxTTL: 60
+          MinTTL: 60
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/89191fa7-b0e6-4357-85e8-61e48f9502cf
           SslSupportMethod: sni-only
