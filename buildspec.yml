@@ -31,7 +31,7 @@ phases:
         # Wait until the stack update completes
         - aws cloudformation wait stack-update-complete --stack-name website-stack
         - aws s3 cp assets/ s3://zach-assets --recursive
-        - aws s3 cp pages/ s3://zach-assets --recursive
+        - aws s3 cp pages/ s3://zach-website --recursive
       # - command
       # - command
   #post_build:
