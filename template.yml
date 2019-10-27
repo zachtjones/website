@@ -6,6 +6,10 @@ Parameters:
     Description: "The ARN of the lambda to run the language classifier"
     Type: String
     Default: "arn:aws:lambda:us-east-1:579864915094:function:languageClassifierGetLanguage"
+  LanguageClassifierIAMRole:
+    Description: The ARN of the lambda's role to assume from ApiGateway
+    Type: String
+    Default: "arn:aws:iam::579864915094:role/API_Gateway"
   AssetsCert:
     Description: "The ARN of the ACM's certificate for the assets.zach-jones.com domain"
     Type: String
@@ -137,3 +141,73 @@ Resources:
         ViewerCertificate:
           AcmCertificateArn: !Ref ContentCert
           SslSupportMethod: sni-only
+
+  # API Gateway configuration for dynamic content
+  APIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      FailOnWarnings: true
+      Name: "WebsiteDynamicContent"
+      Description: "The API that exposes REST endpoint for interactive content"
+
+  LambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !Ref LanguageClassifierLambda
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Join
+        - ''
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref APIGateway
+          - "/*"
+
+  APIStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      RestApiId: !Ref APIGateway
+      StageName: Latest
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ClassifyApi
+    Properties:
+      RestApiId: !Ref APIGateway
+      StageName: DummyStage
+
+  # Create a resource and method for each additional endpoint to expose
+  ClassifyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: classify
+
+  ClassifyApi:
+    DependsOn:
+      LambdaPermission
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LanguageClassifierLambda}/invocations
+        RequestTemplates:
+          application/json: "$input.json('$')"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+      ResourceId: !Ref ClassifyResource
+      RestApiId: !Ref APIGateway
