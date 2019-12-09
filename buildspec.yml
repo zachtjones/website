@@ -1,12 +1,11 @@
 version: 0.2
 
-env:
+#env:
   #variables:
      # key: "value"
      # key: "value"
-  parameter-store:
-     WebsiteCert: WebsiteCert
-     # key: "value"
+  # parameter-store:
+  #    WebsiteCert: WebsiteCert
   #git-credential-helper: yes
 
 phases:
@@ -28,12 +27,11 @@ phases:
   build:
     commands:
         # Can take up to 15-20 minutes to update the cloudfront distribution
-        - aws cloudformation update-stack --stack-name website-stack --capabilities CAPABILITY_AUTO_EXPAND --template-body file://template.yml --parameters ParameterKey=WebsiteCert,ParameterValue=$WebsiteCert
+        - aws cloudformation update-stack --stack-name website-stack --capabilities CAPABILITY_AUTO_EXPAND --template-body file://template.yml
         # Wait until the stack update completes
         - aws cloudformation wait stack-update-complete --stack-name website-stack
         - aws s3 cp assets/ s3://zach-assets --recursive
-        - aws s3 website s3://zach-assets --index-document index.html  # --error-document error.html once we have one
-        - aws s3 cp pages/ s3://zach-assets --recursive
+        - aws s3 cp pages/ s3://zach-website --recursive
       # - command
       # - command
   #post_build:

@@ -2,16 +2,26 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: "The website https://zach-jones.com"
 Parameters:
-  WebsiteCert:
-    Description: The website's certificate ARN for the domain assets.zach-jones.com
+  LanguageClassifierLambda:
+    Description: "The ARN of the lambda to run the language classifier"
     Type: String
-#   EnvironmentName:
-#     Description: Prod or Dev
-#     Type: String
+    Default: "arn:aws:lambda:us-east-1:579864915094:function:languageClassifierGetLanguage"
+  LanguageClassifierIAMRole:
+    Description: The ARN of the lambda's role to assume from ApiGateway
+    Type: String
+    Default: "arn:aws:iam::579864915094:role/API_Gateway"
+  AssetsCert:
+    Description: "The ARN of the ACM's certificate for the assets.zach-jones.com domain"
+    Type: String
+    Default: "arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1"
+  ContentCert:
+    Description: "The ARN of the ACM's certificate for the zach-jones.com domain"
+    Type: String
+    Default: arn:aws:acm:us-east-1:579864915094:certificate/89191fa7-b0e6-4357-85e8-61e48f9502cf
 
 Resources:
   # Allow public reads of the assets bucket
-  StaticAssetsBucketPolicy:
+  StaticAssetsRead:
     Type: AWS::S3::BucketPolicy
     Properties:
       Bucket: !Ref StaticAssetsBucket
@@ -27,16 +37,46 @@ Resources:
             Resource:
               - !Join
                 - ''
-                - - 'arn:aws:s3:::'
-                  - !Ref StaticAssetsBucket
+                - - !GetAtt StaticAssetsBucket.Arn
                   - /*
+
   # this is the assets bucket
   StaticAssetsBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: 'zach-assets'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+        # ErrorDocument: 'error.html' # once there is one
 
-  # CloudFront distribution for the website
+  ContentReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Id: zach-website-content-bucket-policy
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowPublicReads
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Principal: "*" # anonymous access
+            Resource:
+              - !Join
+                - ''
+                - - !GetAtt ContentBucket.Arn
+                  - /*
+
+  # the S3 bucket for the home page
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: 'zach-website'
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+
+  # CloudFront distribution for the website's assets (Images, CSS)
   myDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -66,5 +106,111 @@ Resources:
           MaxTTL: 86400 # 1 day
           MinTTL: 60
         ViewerCertificate:
-          AcmCertificateArn: arn:aws:acm:us-east-1:579864915094:certificate/4b7a5852-2de9-44d7-9479-a285c6e7c2f1
+          AcmCertificateArn: !Ref AssetsCert
           SslSupportMethod: sni-only
+
+  # CloudFront distribution for the website's content (HTML, JS)
+  contentDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+           - DomainName: !GetAtt ContentBucket.DomainName
+             Id: !Ref ContentBucket
+             S3OriginConfig: {}
+        Enabled: 'true'
+        DefaultRootObject: index.html
+        Aliases:
+          - zach-jones.com
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref ContentBucket
+          AllowedMethods:
+             - GET
+             - HEAD
+          CachedMethods:
+             - GET
+             - HEAD
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: true
+          ViewerProtocolPolicy: redirect-to-https
+          DefaultTTL: 60 # one minute
+          MaxTTL: 60
+          MinTTL: 60
+        ViewerCertificate:
+          AcmCertificateArn: !Ref ContentCert
+          SslSupportMethod: sni-only
+
+  # API Gateway configuration for dynamic content
+  APIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      FailOnWarnings: true
+      Name: "WebsiteDynamicContent"
+      Description: "The API that exposes REST endpoint for interactive content"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  LambdaPermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !Ref LanguageClassifierLambda
+      Principal: "apigateway.amazonaws.com"
+      SourceArn: !Join
+        - ''
+        - - "arn:aws:execute-api:"
+          - !Ref AWS::Region
+          - ":"
+          - !Ref AWS::AccountId
+          - ":"
+          - !Ref APIGateway
+          - "/*"
+
+  APIStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref ApiDeployment
+      RestApiId: !Ref APIGateway
+      StageName: Latest
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ClassifyApi
+    Properties:
+      RestApiId: !Ref APIGateway
+      StageName: DummyStage
+
+  # Create a resource and method for each additional endpoint to expose
+  ClassifyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGateway
+      ParentId: !GetAtt APIGateway.RootResourceId
+      PathPart: classify
+
+  ClassifyApi:
+    DependsOn:
+      LambdaPermission
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LanguageClassifierLambda}/invocations
+        RequestTemplates:
+          application/json: "$input.json('$')"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+      ResourceId: !Ref ClassifyResource
+      RestApiId: !Ref APIGateway
