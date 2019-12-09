@@ -149,6 +149,9 @@ Resources:
       FailOnWarnings: true
       Name: "WebsiteDynamicContent"
       Description: "The API that exposes REST endpoint for interactive content"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   LambdaPermission:
     Type: "AWS::Lambda::Permission"
